@@ -148,20 +148,20 @@
         <h1>Ashby</h1>
         
         <div class="control-group">
-            <label>Soglia Critica <span id="val-threshold">100</span></label>
-            <span class="help-text">Valore di stress che innesca la mutazione strutturale. Più è bassa, più il sistema è instabile.</span>
+            <label>Critical Threshold <span id="val-threshold">100</span></label>
+            <span class="help-text">Stress value triggering structural mutation. Lower values yield higher system instability.</span>
             <input type="range" id="param-threshold" min="20" max="180" value="100">
         </div>
         
         <div class="control-group">
-            <label>Recupero Naturale <span id="val-damping">0.10</span></label>
-            <span class="help-text">Capacità innata di dissipare lo stress nel tempo.</span>
+            <label>Natural Recovery <span id="val-damping">0.10</span></label>
+            <span class="help-text">Innate capacity to dissipate stress over time.</span>
             <input type="range" id="param-damping" min="0.01" max="0.3" step="0.01" value="0.10">
         </div>
 
         <div class="control-group">
-            <label>Sensibilità Amb. <span id="val-sensitivity">15</span></label>
-            <span class="help-text">Intensità della reazione ai disturbi esterni (mouse).</span>
+            <label>Env. Sensitivity <span id="val-sensitivity">15</span></label>
+            <span class="help-text">Intensity of the reaction to external disturbances (mouse).</span>
             <input type="range" id="param-sensitivity" min="1" max="50" value="15">
         </div>
 
@@ -169,19 +169,19 @@
         <button id="btn-homeostasis" style="margin-top: 10px; background: rgba(100, 200, 255, 0.15); border-color: rgba(100, 200, 255, 0.3); color: #aaddff;">Force Homeostasis</button>
 
         <div id="instructions">
-            <b>Interazione:</b> Trascina il mouse tra le cellule per iniettare stress ambientale.
+            <b>Interaction:</b> Click and hold to generate a growing zone of chaos. Drag it against the cells to inject environmental stress.
         </div>
 
         <div id="about">
-            <b>L'Omeostato di Ashby:</b><br>
-            Ispirato all'opera di W. Ross Ashby del 1948, questo sistema simula l'<i>ultrastabilità</i>. Quattro cellule interconnesse reagiscono all'ambiente. Se lo stress supera la soglia, riorganizzano i propri legami finché non ritrovano l'equilibrio.
+            <b>Ashby's Homeostat:</b><br>
+            Inspired by W. Ross Ashby's 1948 work, this system simulates <i>ultrastability</i>. Four interconnected cells react to the environment. If stress exceeds the threshold, they reorganize their linkages until equilibrium is found.
         </div>
     </div>
 
     <div id="dashboard" class="panel">
         <h2>Monitoring</h2>
-        <div id="system-status" class="status-badge stable">Stato: Ultrastabile</div>
-        <div id="timer-display">Sistema a riposo</div>
+        <div id="system-status" class="status-badge stable">State: Ultrastable</div>
+        <div id="timer-display">System at rest</div>
         <div id="cells-container"></div>
     </div>
 
@@ -214,6 +214,9 @@
         let isTimerRunning = false;
         let lastRecoveryDuration = 0;
 
+        let chaosRadius = 0;
+        const MAX_CHAOS_RADIUS = 350;
+
         function initCells() {
             cellsContainer.innerHTML = '';
             cells = [];
@@ -221,7 +224,7 @@
                 cells.push({ id: i, x: 0, y: 0, baseX: 0, baseY: 0, value: 0, velocity: 0, phase: Math.random() * Math.PI * 2 });
                 const statHTML = `
                     <div class="cell-stat" id="stat-cell-${i}">
-                        <div style="font-size:0.8rem; margin-top:8px">Cella ${i+1}: <span id="val-cell-${i}">0</span></div>
+                        <div style="font-size:0.8rem; margin-top:8px">Cell ${i+1}: <span id="val-cell-${i}">0</span></div>
                         <div class="bar-container">
                             <div class="bar-fill" id="bar-cell-${i}"></div>
                             <div class="bar-threshold" id="thresh-left-${i}"></div>
@@ -268,10 +271,9 @@
                 for(let j = 0; j < NUM_CELLS; j++) {
                     weightMatrix[i][j] = (Math.random() - 0.5) * 0.35;
                 }
-                // Smorzamento locale influenzato dal parametro damping
                 weightMatrix[i][i] = -0.05 - params.damping;
             }
-            mutationTimer = 30; // Protezione per evitare mutazioni a raffica nello stesso frame
+            mutationTimer = 30; 
             changeState('mutating');
         }
 
@@ -293,8 +295,6 @@
         });
 
         document.getElementById('btn-mutate').addEventListener('click', () => {
-            // "Force Chaos" ora inietta uno stress fisso (90 unità).
-            // Se la soglia è bassa (es. 20), è un disastro. Se è alta (es. 180), è gestibile.
             cells.forEach(c => {
                 c.value += (Math.random() > 0.5 ? 1 : -1) * 90;
                 c.velocity += (Math.random() - 0.5) * 15;
@@ -325,16 +325,27 @@
         };
         canvas.addEventListener('mousedown', (e) => { isDown = true; updateMouse(e); });
         canvas.addEventListener('mousemove', (e) => { if(isDown) updateMouse(e); });
-        window.addEventListener('mouseup', () => { isDown = false; mouseX = -1000; });
+        window.addEventListener('mouseup', () => { isDown = false; });
 
         function updateSystem() {
             time += 0.05;
             let maxStress = 0, maxVelocity = 0, limitReached = false;
 
             if (isDown) {
+                chaosRadius = Math.min(chaosRadius + 3, MAX_CHAOS_RADIUS);
+            } else {
+                chaosRadius = Math.max(chaosRadius - 15, 0);
+                if (chaosRadius === 0) mouseX = -1000;
+            }
+
+            if (chaosRadius > 0 && mouseX !== -1000) {
                 cells.forEach(cell => {
                     const dist = Math.sqrt(Math.pow(mouseX - cell.x, 2) + Math.pow(mouseY - cell.y, 2));
-                    if (dist < 150) cell.value += (Math.random() > 0.5 ? 1 : -1) * ((150 - dist) / 150) * params.sensitivity;
+                    if (dist < chaosRadius) {
+                        const intensity = (chaosRadius - dist) / chaosRadius;
+                        const chaosFactor = (chaosRadius / 100); 
+                        cell.value += (Math.random() > 0.5 ? 1 : -1) * intensity * params.sensitivity * chaosFactor;
+                    }
                 });
             }
 
@@ -349,7 +360,6 @@
                 cell.velocity *= 0.88; 
                 cell.value += cell.velocity;
                 
-                // Safety Clamp per evitare infiniti numerici
                 if (cell.value > 500) cell.value = 500;
                 if (cell.value < -500) cell.value = -500;
                 
@@ -361,7 +371,6 @@
                 if (currentStress > maxStress) maxStress = currentStress;
                 if (Math.abs(cell.velocity) > maxVelocity) maxVelocity = Math.abs(cell.velocity);
                 
-                // La mutazione avviene se lo stress supera la soglia impostata dall'utente
                 if (currentStress >= params.threshold) limitReached = true;
                 
                 updateCellUI(i, cell.value);
@@ -375,7 +384,6 @@
                     mutateGenetics();
                     stableFrames = 0;
                 } else {
-                    // Stabilità definita come stress < 25% della soglia e velocità minima
                     let isQuiet = (maxStress <= params.threshold * 0.25 && maxVelocity <= params.threshold * 0.05);
                     if (isQuiet) {
                         stableFrames++;
@@ -390,21 +398,20 @@
 
         function updateStatusUI() {
             statusBadge.className = 'status-badge';
-            if (systemState === 'stable') { statusBadge.classList.add('stable'); statusBadge.textContent = 'Stato: Ultrastabile'; }
-            else if (systemState === 'adapting') { statusBadge.classList.add('adapting'); statusBadge.textContent = 'Stato: Adattamento...'; }
-            else if (systemState === 'mutating') { statusBadge.classList.add('mutating'); statusBadge.textContent = 'Stato: MUTAZIONE!'; }
+            if (systemState === 'stable') { statusBadge.classList.add('stable'); statusBadge.textContent = 'State: Ultrastable'; }
+            else if (systemState === 'adapting') { statusBadge.classList.add('adapting'); statusBadge.textContent = 'State: Adapting...'; }
+            else if (systemState === 'mutating') { statusBadge.classList.add('mutating'); statusBadge.textContent = 'State: MUTATING!'; }
         }
 
         function updateTimerUI() {
             const timerEl = document.getElementById('timer-display');
-            if (isTimerRunning) timerEl.innerHTML = `Ricerca equilibrio: <span style="color: #ffcc44">${((Date.now() - timerStart) / 1000).toFixed(1)}s</span>`;
-            else timerEl.innerHTML = lastRecoveryDuration > 0 ? `Equilibrio in: <span style="color: #44cc88">${lastRecoveryDuration.toFixed(1)}s</span>` : `Sistema a riposo`;
+            if (isTimerRunning) timerEl.innerHTML = `Seeking equilibrium: <span style="color: #ffcc44">${((Date.now() - timerStart) / 1000).toFixed(1)}s</span>`;
+            else timerEl.innerHTML = lastRecoveryDuration > 0 ? `Equilibrium in: <span style="color: #44cc88">${lastRecoveryDuration.toFixed(1)}s</span>` : `System at rest`;
         }
 
         function updateCellUI(index, value) {
             document.getElementById(`val-cell-${index}`).textContent = value.toFixed(1);
             const bar = document.getElementById(`bar-cell-${index}`);
-            // Mostra la barra basata sul valore assoluto relativo a 200 (max UI)
             let percentage = Math.min((Math.abs(value) / 200) * 100, 100);
             bar.style.width = `${percentage}%`;
             bar.style.transform = value >= 0 ? 'translateX(0)' : 'translateX(-100%)';
@@ -424,6 +431,23 @@
             ctx.fillStyle = 'rgba(3, 10, 8, 0.2)';
             ctx.fillRect(0, 0, width, height);
             ctx.globalCompositeOperation = 'lighter';
+
+            // Draw growing chaos zone
+            if (chaosRadius > 0 && mouseX !== -1000) {
+                const chaosIntensity = chaosRadius / MAX_CHAOS_RADIUS;
+                const r = 255;
+                const g = Math.floor(50 - chaosIntensity * 50);
+                const b = Math.floor(50 - chaosIntensity * 50);
+                
+                const gradient = ctx.createRadialGradient(mouseX, mouseY, 0, mouseX, mouseY, chaosRadius);
+                gradient.addColorStop(0, `rgba(${r}, ${g}, ${b}, ${0.1 + chaosIntensity * 0.4})`);
+                gradient.addColorStop(1, `rgba(${r}, ${g}, ${b}, 0)`);
+                
+                ctx.beginPath();
+                ctx.arc(mouseX, mouseY, chaosRadius, 0, Math.PI * 2);
+                ctx.fillStyle = gradient;
+                ctx.fill();
+            }
 
             for(let i = 0; i < NUM_CELLS; i++) {
                 for(let j = 0; j < NUM_CELLS; j++) {
