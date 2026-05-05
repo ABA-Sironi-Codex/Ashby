@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Generative Homeostat - Cybernetic Organism</title>
+    <title>Generative Homeostat - Ashby</title>
     <style>
         :root {
             --bg-color: #030a08;
@@ -31,7 +31,6 @@
             height: 100%;
         }
 
-        /* Pannelli UI */
         .panel {
             position: absolute;
             background: var(--panel-bg);
@@ -40,23 +39,12 @@
             padding: 15px;
             backdrop-filter: blur(5px);
             z-index: 10;
-            max-height: 90vh;
+            max-height: 95vh;
             overflow-y: auto;
         }
 
-        /* Controlli a sinistra */
-        #controls {
-            top: 20px;
-            left: 20px;
-            width: 280px;
-        }
-
-        /* Dashboard a destra */
-        #dashboard {
-            top: 20px;
-            right: 20px;
-            width: 250px;
-        }
+        #controls { top: 20px; left: 20px; width: 280px; }
+        #dashboard { top: 20px; right: 20px; width: 250px; }
 
         h1, h2 {
             margin: 0 0 15px 0;
@@ -68,21 +56,19 @@
             color: #ffffff;
         }
 
-        .control-group {
-            margin-bottom: 15px;
+        .control-group { margin-bottom: 15px; }
+        .control-group label { display: flex; justify-content: space-between; font-size: 0.85rem; margin-bottom: 5px; }
+        
+        .help-text {
+            font-size: 0.7rem;
+            color: #b8ccbf;
+            margin-top: -3px;
+            margin-bottom: 8px;
+            line-height: 1.2;
+            display: block;
         }
 
-        .control-group label {
-            display: flex;
-            justify-content: space-between;
-            font-size: 0.85rem;
-            margin-bottom: 5px;
-        }
-
-        input[type="range"] {
-            width: 100%;
-            accent-color: #44cc88;
-        }
+        input[type="range"] { width: 100%; accent-color: #44cc88; }
 
         button {
             width: 100%;
@@ -98,11 +84,8 @@
             border-radius: 4px;
         }
 
-        button:hover {
-            background: rgba(50, 150, 100, 0.5);
-        }
+        button:hover { background: rgba(50, 150, 100, 0.5); }
 
-        /* Stili Dashboard */
         .status-badge {
             display: inline-block;
             padding: 5px 10px;
@@ -128,14 +111,8 @@
             letter-spacing: 1px;
         }
 
-        .cell-stat {
-            font-size: 0.85rem;
-            margin-bottom: 10px;
-        }
-
         .bar-container {
-            width: 100%;
-            height: 10px;
+            width: 100%; height: 10px;
             background: rgba(255,255,255,0.1);
             border-radius: 5px;
             overflow: hidden;
@@ -144,72 +121,47 @@
         }
 
         .bar-fill {
-            height: 100%;
-            width: 0%;
+            height: 100%; width: 0%;
             background: #44cc88;
             transition: width 0.1s, background-color 0.3s;
-            position: absolute;
-            left: 50%;
-            transform: translateX(-50%);
+            position: absolute; left: 50%;
         }
 
         .bar-threshold {
-            position: absolute;
-            top: 0;
-            height: 100%;
-            width: 2px;
+            position: absolute; top: 0;
+            height: 100%; width: 2px;
             background: rgba(255,0,0,0.8);
             z-index: 2;
         }
 
-        #instructions {
-            font-size: 0.8rem;
-            color: #d0e0d8;
-            margin-top: 15px;
-            line-height: 1.4;
-        }
-
-        .help-text {
-            font-size: 0.7rem;
-            color: #b8ccbf;
-            margin-top: -3px;
-            margin-bottom: 8px;
-            line-height: 1.2;
-            display: block;
-        }
-
+        #instructions { font-size: 0.8rem; color: #d0e0d8; margin-top: 15px; line-height: 1.4; }
         #about {
-            margin-top: 20px;
-            padding-top: 15px;
+            margin-top: 20px; padding-top: 15px;
             border-top: 1px solid var(--border-color);
-            font-size: 0.8rem;
-            color: #d0e0d8;
-            line-height: 1.4;
+            font-size: 0.8rem; color: #d0e0d8; line-height: 1.4;
         }
-
     </style>
 </head>
 <body>
 
-    <!-- Controlli -->
     <div id="controls" class="panel">
         <h1>Ashby</h1>
         
         <div class="control-group">
-            <label>Critical Threshold <span id="val-threshold">100</span></label>
-            <span class="help-text">The stress level that triggers structural mutation.</span>
-            <input type="range" id="param-threshold" min="30" max="200" value="100">
+            <label>Soglia Critica <span id="val-threshold">100</span></label>
+            <span class="help-text">Valore di stress che innesca la mutazione strutturale. Più è bassa, più il sistema è instabile.</span>
+            <input type="range" id="param-threshold" min="20" max="180" value="100">
         </div>
         
         <div class="control-group">
-            <label>Natural Recovery <span id="val-damping">0.10</span></label>
-            <span class="help-text">Innate ability to dissipate stress over time.</span>
+            <label>Recupero Naturale <span id="val-damping">0.10</span></label>
+            <span class="help-text">Capacità innata di dissipare lo stress nel tempo.</span>
             <input type="range" id="param-damping" min="0.01" max="0.3" step="0.01" value="0.10">
         </div>
 
         <div class="control-group">
-            <label>Env. Sensitivity <span id="val-sensitivity">15</span></label>
-            <span class="help-text">Intensity of reaction to external disturbances.</span>
+            <label>Sensibilità Amb. <span id="val-sensitivity">15</span></label>
+            <span class="help-text">Intensità della reazione ai disturbi esterni (mouse).</span>
             <input type="range" id="param-sensitivity" min="1" max="50" value="15">
         </div>
 
@@ -217,24 +169,20 @@
         <button id="btn-homeostasis" style="margin-top: 10px; background: rgba(100, 200, 255, 0.15); border-color: rgba(100, 200, 255, 0.3); color: #aaddff;">Force Homeostasis</button>
 
         <div id="instructions">
-            <b>Interaction:</b> Click and drag in the primordial soup (background) to inject environmental stress and perturb the cells.
+            <b>Interazione:</b> Trascina il mouse tra le cellule per iniettare stress ambientale.
         </div>
 
         <div id="about">
-            <b>About the Homeostat:</b><br>
-            Inspired by W. Ross Ashby's 1948 Homeostat, this artwork simulates <i>ultrastability</i>. Four interconnected cells are perturbed by the environment. If their stress exceeds the critical threshold, they randomly reorganize their internal synapses until a new state of equilibrium is found. It's a visual metaphor for cybernetic learning and adaptation.
+            <b>L'Omeostato di Ashby:</b><br>
+            Ispirato all'opera di W. Ross Ashby del 1948, questo sistema simula l'<i>ultrastabilità</i>. Quattro cellule interconnesse reagiscono all'ambiente. Se lo stress supera la soglia, riorganizzano i propri legami finché non ritrovano l'equilibrio.
         </div>
     </div>
 
-    <!-- Dashboard -->
     <div id="dashboard" class="panel">
         <h2>Monitoring</h2>
-        <div id="system-status" class="status-badge stable">Status: Ultrastable</div>
-        <div id="timer-display">System at rest</div>
-        
-        <div id="cells-container">
-            <!-- Iniettato via JS -->
-        </div>
+        <div id="system-status" class="status-badge stable">Stato: Ultrastabile</div>
+        <div id="timer-display">Sistema a riposo</div>
+        <div id="cells-container"></div>
     </div>
 
     <canvas id="canvas"></canvas>
@@ -242,18 +190,15 @@
     <script>
         const canvas = document.getElementById('canvas');
         const ctx = canvas.getContext('2d');
-        
-        // Elementi UI
         const statusBadge = document.getElementById('system-status');
         const cellsContainer = document.getElementById('cells-container');
         const thresholdInput = document.getElementById('param-threshold');
         const dampingInput = document.getElementById('param-damping');
         const sensitivityInput = document.getElementById('param-sensitivity');
         
-        // Parametri di sistema configurabili
         let params = {
             threshold: parseInt(thresholdInput.value),
-            damping: parseFloat(dampingInput.value), // Forza che riporta a zero
+            damping: parseFloat(dampingInput.value),
             sensitivity: parseInt(sensitivityInput.value)
         };
 
@@ -261,43 +206,28 @@
         const NUM_CELLS = 4;
         let cells = [];
         let weightMatrix = [];
-        
-        // Stato della simulazione
-        let systemState = 'stable'; // stable, adapting, mutating
+        let systemState = 'stable';
         let mutationTimer = 0;
         let time = 0;
-        let stableFrames = 0; // Contatore per confermare la stabilità vera
-
-        // Variabili per il Timer
+        let stableFrames = 0;
         let timerStart = Date.now();
         let isTimerRunning = false;
         let lastRecoveryDuration = 0;
 
-        // Inizializzazione delle cellule
         function initCells() {
             cellsContainer.innerHTML = '';
             cells = [];
             for(let i = 0; i < NUM_CELLS; i++) {
-                cells.push({
-                    id: i,
-                    x: 0, y: 0,
-                    baseX: 0, baseY: 0,
-                    value: 0,      // Variabile essenziale (Stress)
-                    velocity: 0,
-                    phase: Math.random() * Math.PI * 2 // Per movimenti organici
-                });
-
-                // Crea UI per la cellula
+                cells.push({ id: i, x: 0, y: 0, baseX: 0, baseY: 0, value: 0, velocity: 0, phase: Math.random() * Math.PI * 2 });
                 const statHTML = `
                     <div class="cell-stat" id="stat-cell-${i}">
-                        <span>Cell ${i+1}: </span><span id="val-cell-${i}">0</span>
+                        <div style="font-size:0.8rem; margin-top:8px">Cella ${i+1}: <span id="val-cell-${i}">0</span></div>
                         <div class="bar-container">
                             <div class="bar-fill" id="bar-cell-${i}"></div>
-                            <div class="bar-threshold" style="left: ${50 - (params.threshold/200)*50}%"></div>
-                            <div class="bar-threshold" style="left: ${50 + (params.threshold/200)*50}%"></div>
+                            <div class="bar-threshold" id="thresh-left-${i}"></div>
+                            <div class="bar-threshold" id="thresh-right-${i}"></div>
                         </div>
-                    </div>
-                `;
+                    </div>`;
                 cellsContainer.insertAdjacentHTML('beforeend', statHTML);
             }
             positionCells();
@@ -307,11 +237,9 @@
         function positionCells() {
             width = canvas.width = window.innerWidth;
             height = canvas.height = window.innerHeight;
-            
             const centerX = width / 2;
             const centerY = height / 2;
             const radius = Math.min(width, height) * 0.25;
-            
             for(let i = 0; i < NUM_CELLS; i++) {
                 const angle = (i / NUM_CELLS) * Math.PI * 2 - Math.PI / 4;
                 cells[i].baseX = centerX + Math.cos(angle) * radius;
@@ -320,45 +248,33 @@
             updateThresholdUI();
         }
 
-        // Gestione unificata del cambio di stato per il timer
         function changeState(newState) {
             if (systemState === newState) return;
-
             if (systemState === 'stable' && newState !== 'stable') {
-                // Il sistema viene perturbato, parte il cronometro
                 timerStart = Date.now();
                 isTimerRunning = true;
             } else if (systemState !== 'stable' && newState === 'stable') {
-                // Il sistema ritrova la pace, ferma il cronometro
                 lastRecoveryDuration = (Date.now() - timerStart) / 1000;
                 isTimerRunning = false;
             }
-
             systemState = newState;
             updateStatusUI();
         }
 
-        // Modifica la matrice dei pesi (i Commutatori di Ashby)
         function mutateGenetics() {
             weightMatrix = [];
             for(let i = 0; i < NUM_CELLS; i++) {
                 weightMatrix[i] = [];
                 for(let j = 0; j < NUM_CELLS; j++) {
-                    // Genera pesi casuali. 
-                    // Nell'omeostato reale alcuni sistemi sono instabili e devono ricalcolare.
-                    weightMatrix[i][j] = (Math.random() - 0.5) * 0.3;
+                    weightMatrix[i][j] = (Math.random() - 0.5) * 0.35;
                 }
-                // Autoregolazione (smorzamento intrinseco) per favorire la ricerca dell'equilibrio
-                weightMatrix[i][i] = -Math.random() * 0.1 - params.damping;
+                // Smorzamento locale influenzato dal parametro damping
+                weightMatrix[i][i] = -0.05 - params.damping;
             }
-            
-            mutationTimer = 30; // Frame di durata della transizione
+            mutationTimer = 30; // Protezione per evitare mutazioni a raffica nello stesso frame
             changeState('mutating');
         }
 
-        // Listener Eventi UI
-        window.addEventListener('resize', positionCells);
-        
         thresholdInput.addEventListener('input', (e) => {
             params.threshold = parseInt(e.target.value);
             document.getElementById('val-threshold').textContent = params.threshold;
@@ -368,10 +284,7 @@
         dampingInput.addEventListener('input', (e) => {
             params.damping = parseFloat(e.target.value);
             document.getElementById('val-damping').textContent = params.damping.toFixed(2);
-            // Aggiorna la diagonale della matrice per riflettere il nuovo smorzamento
-            for(let i=0; i<NUM_CELLS; i++) {
-                weightMatrix[i][i] = -Math.abs(weightMatrix[i][i]) - params.damping;
-            }
+            for(let i=0; i<NUM_CELLS; i++) weightMatrix[i][i] = -Math.abs(weightMatrix[i][i]) - params.damping;
         });
 
         sensitivityInput.addEventListener('input', (e) => {
@@ -380,322 +293,188 @@
         });
 
         document.getElementById('btn-mutate').addEventListener('click', () => {
-            // Forza una perturbazione enorme prima di mutare
-            cells.forEach(c => c.value += (Math.random() > 0.5 ? 1 : -1) * params.threshold * 1.5);
+            // "Force Chaos" ora inietta uno stress fisso (90 unità).
+            // Se la soglia è bassa (es. 20), è un disastro. Se è alta (es. 180), è gestibile.
+            cells.forEach(c => {
+                c.value += (Math.random() > 0.5 ? 1 : -1) * 90;
+                c.velocity += (Math.random() - 0.5) * 15;
+            });
             mutateGenetics();
         });
 
         document.getElementById('btn-homeostasis').addEventListener('click', () => {
-            // 1. Forza una matrice cibernetica stabile per garantire un recupero morbido
-            weightMatrix = [];
             for(let i = 0; i < NUM_CELLS; i++) {
-                weightMatrix[i] = [];
                 for(let j = 0; j < NUM_CELLS; j++) {
-                    // Connessioni debolissime per non interferire troppo
-                    weightMatrix[i][j] = (Math.random() - 0.5) * 0.05; 
+                    weightMatrix[i][j] *= 0.2;
                 }
-                // Forte auto-smorzamento per cullare il sistema verso la quiete
-                weightMatrix[i][i] = -0.2 - params.damping;
+                weightMatrix[i][i] = -0.8 - params.damping;
             }
-            
-            // 2. Riduci lo stress improvvisamente, lasciando un residuo (15%) che svanirà in pochi secondi
             cells.forEach(c => {
-                c.value = (Math.random() > 0.5 ? 1 : -1) * params.threshold * 0.15;
+                c.value *= 0.05;
                 c.velocity = 0;
             });
-
-            // Manda il sistema in adattamento per goderci visivamente l'ultimo tratto verso la stabilità
             mutationTimer = 0;
             changeState('adapting');
         });
 
-        // Interazione Ambientale (Mouse)
         let mouseX = -1000, mouseY = -1000, isDown = false;
-        
         const updateMouse = (e) => {
             const rect = canvas.getBoundingClientRect();
-            mouseX = (e.clientX || e.touches[0].clientX) - rect.left;
-            mouseY = (e.clientY || e.touches[0].clientY) - rect.top;
+            mouseX = (e.clientX || (e.touches && e.touches[0].clientX)) - rect.left;
+            mouseY = (e.clientY || (e.touches && e.touches[0].clientY)) - rect.top;
         };
-
         canvas.addEventListener('mousedown', (e) => { isDown = true; updateMouse(e); });
         canvas.addEventListener('mousemove', (e) => { if(isDown) updateMouse(e); });
         window.addEventListener('mouseup', () => { isDown = false; mouseX = -1000; });
-        canvas.addEventListener('touchstart', (e) => { isDown = true; updateMouse(e); }, {passive: false});
-        canvas.addEventListener('touchmove', (e) => { if(isDown) updateMouse(e); e.preventDefault(); }, {passive: false});
-        window.addEventListener('touchend', () => { isDown = false; mouseX = -1000; });
 
-        // Logica di aggiornamento dell'Omeostato
         function updateSystem() {
             time += 0.05;
-            let totalStress = 0;
-            let maxStress = 0;
-            let maxVelocity = 0; // Misuriamo l'inerzia del sistema
-            let limitReached = false;
+            let maxStress = 0, maxVelocity = 0, limitReached = false;
 
-            // Applica input ambientale (il mouse)
             if (isDown) {
                 cells.forEach(cell => {
-                    const dx = mouseX - cell.x;
-                    const dy = mouseY - cell.y;
-                    const dist = Math.sqrt(dx*dx + dy*dy);
-                    if (dist < 150) {
-                        // Inietta stress basato sulla sensibilità e vicinanza
-                        const stressInjection = ((150 - dist) / 150) * params.sensitivity;
-                        cell.value += (Math.random() > 0.5 ? 1 : -1) * stressInjection;
-                    }
+                    const dist = Math.sqrt(Math.pow(mouseX - cell.x, 2) + Math.pow(mouseY - cell.y, 2));
+                    if (dist < 150) cell.value += (Math.random() > 0.5 ? 1 : -1) * ((150 - dist) / 150) * params.sensitivity;
                 });
             }
 
-            // Calcolo matrice cibernetica dV/dt
             let derivatives = new Array(NUM_CELLS).fill(0);
             for(let i = 0; i < NUM_CELLS; i++) {
-                for(let j = 0; j < NUM_CELLS; j++) {
-                    derivatives[i] += weightMatrix[i][j] * cells[j].value;
-                }
+                for(let j = 0; j < NUM_CELLS; j++) derivatives[i] += weightMatrix[i][j] * cells[j].value;
             }
 
-            // Aggiorna i valori
             for(let i = 0; i < NUM_CELLS; i++) {
                 let cell = cells[i];
-                
-                // Integrazione
                 cell.velocity += derivatives[i];
-                cell.velocity *= 0.9; // Attrito interno
+                cell.velocity *= 0.88; 
                 cell.value += cell.velocity;
-
-                // Movimento organico base + movimento indotto dallo stress
+                
+                // Safety Clamp per evitare infiniti numerici
+                if (cell.value > 500) cell.value = 500;
+                if (cell.value < -500) cell.value = -500;
+                
                 const stressFloat = Math.abs(cell.value) * 0.1;
                 cell.x = cell.baseX + Math.sin(time + cell.phase) * 10 + (Math.random() - 0.5) * stressFloat;
                 cell.y = cell.baseY + Math.cos(time + cell.phase) * 10 + (Math.random() - 0.5) * stressFloat;
-
+                
                 const currentStress = Math.abs(cell.value);
-                totalStress += currentStress;
                 if (currentStress > maxStress) maxStress = currentStress;
-                if (Math.abs(cell.velocity) > maxVelocity) maxVelocity = Math.abs(cell.velocity); // Registra la velocità massima
-
-                // Controllo variabili essenziali
-                if (currentStress >= params.threshold) {
-                    limitReached = true;
-                    // Tappa il valore visivamente per non farlo esplodere all'infinito
-                    cell.value = Math.sign(cell.value) * params.threshold * 1.1; 
-                }
-
+                if (Math.abs(cell.velocity) > maxVelocity) maxVelocity = Math.abs(cell.velocity);
+                
+                // La mutazione avviene se lo stress supera la soglia impostata dall'utente
+                if (currentStress >= params.threshold) limitReached = true;
+                
                 updateCellUI(i, cell.value);
             }
 
-            // Gestione Stato Sistema
             if (mutationTimer > 0) {
                 mutationTimer--;
-                stableFrames = 0; // Nessuna stabilità durante la mutazione
+                stableFrames = 0;
             } else {
                 if (limitReached) {
-                    // Ultrastabilità: La variabile essenziale ha superato il limite, il sistema muta!
                     mutateGenetics();
                     stableFrames = 0;
                 } else {
-                    // Controlla se siamo fisicamente in un range di quiete
-                    let isQuiet = (maxStress <= params.threshold * 0.3 && maxVelocity <= params.threshold * 0.05);
-                    
+                    // Stabilità definita come stress < 25% della soglia e velocità minima
+                    let isQuiet = (maxStress <= params.threshold * 0.25 && maxVelocity <= params.threshold * 0.05);
                     if (isQuiet) {
                         stableFrames++;
-                        // Esige circa mezzo secondo (30 frame) di quiete ininterrotta per dichiarare la vera pace
-                        if (stableFrames > 30 && systemState !== 'stable') {
-                            changeState('stable');
-                        }
+                        if (stableFrames > 40 && systemState !== 'stable') changeState('stable');
                     } else {
-                        stableFrames = 0; // Al primo sussulto, il contatore si azzera
-                        if (systemState !== 'adapting') {
-                            changeState('adapting');
-                        }
+                        stableFrames = 0;
+                        if (systemState !== 'adapting' && systemState !== 'mutating') changeState('adapting');
                     }
                 }
             }
         }
 
-        // Funzioni UI
         function updateStatusUI() {
             statusBadge.className = 'status-badge';
-            if (systemState === 'stable') {
-                statusBadge.classList.add('stable');
-                statusBadge.textContent = 'Status: Ultrastable';
-            } else if (systemState === 'adapting') {
-                statusBadge.classList.add('adapting');
-                statusBadge.textContent = 'Status: Adapting...';
-            } else if (systemState === 'mutating') {
-                statusBadge.classList.add('mutating');
-                statusBadge.textContent = 'Status: MUTATING CONNECTIONS!';
-            }
+            if (systemState === 'stable') { statusBadge.classList.add('stable'); statusBadge.textContent = 'Stato: Ultrastabile'; }
+            else if (systemState === 'adapting') { statusBadge.classList.add('adapting'); statusBadge.textContent = 'Stato: Adattamento...'; }
+            else if (systemState === 'mutating') { statusBadge.classList.add('mutating'); statusBadge.textContent = 'Stato: MUTAZIONE!'; }
         }
 
         function updateTimerUI() {
             const timerEl = document.getElementById('timer-display');
-            if (!timerEl) return;
-
-            if (isTimerRunning) {
-                // Calcola i secondi trascorsi in tempo reale
-                const elapsed = ((Date.now() - timerStart) / 1000).toFixed(1);
-                timerEl.innerHTML = `Seeking equilibrium: <span style="color: #ffcc44">${elapsed}s</span>`;
-            } else {
-                if (lastRecoveryDuration > 0) {
-                    timerEl.innerHTML = `Last recovery in: <span style="color: #44cc88">${lastRecoveryDuration.toFixed(1)}s</span>`;
-                } else {
-                    timerEl.innerHTML = `System at rest`;
-                }
-            }
+            if (isTimerRunning) timerEl.innerHTML = `Ricerca equilibrio: <span style="color: #ffcc44">${((Date.now() - timerStart) / 1000).toFixed(1)}s</span>`;
+            else timerEl.innerHTML = lastRecoveryDuration > 0 ? `Equilibrio in: <span style="color: #44cc88">${lastRecoveryDuration.toFixed(1)}s</span>` : `Sistema a riposo`;
         }
 
         function updateCellUI(index, value) {
             document.getElementById(`val-cell-${index}`).textContent = value.toFixed(1);
             const bar = document.getElementById(`bar-cell-${index}`);
-            
-            // Calcola larghezza barra (Max 200 scala per evitare che sbordi)
-            const maxVal = 200; 
-            let percentage = (Math.abs(value) / maxVal) * 100;
-            if (percentage > 100) percentage = 100;
-            
+            // Mostra la barra basata sul valore assoluto relativo a 200 (max UI)
+            let percentage = Math.min((Math.abs(value) / 200) * 100, 100);
             bar.style.width = `${percentage}%`;
-            
-            // Direzione: destra positivo, sinistra negativo
-            if (value >= 0) {
-                bar.style.left = '50%';
-                bar.style.transform = 'translateX(0)';
-            } else {
-                bar.style.left = '50%';
-                bar.style.transform = 'translateX(-100%)';
-            }
-
-            // Colore barra basato sulla vicinanza alla soglia
+            bar.style.transform = value >= 0 ? 'translateX(0)' : 'translateX(-100%)';
             const stressRatio = Math.abs(value) / params.threshold;
-            if (stressRatio > 1) bar.style.backgroundColor = '#ff5555';
-            else if (stressRatio > 0.7) bar.style.backgroundColor = '#ffcc44';
-            else bar.style.backgroundColor = '#44cc88';
+            bar.style.backgroundColor = stressRatio > 1 ? '#ff5555' : (stressRatio > 0.7 ? '#ffcc44' : '#44cc88');
         }
 
         function updateThresholdUI() {
-            // Aggiorna i marker rossi sulle barre
             for(let i=0; i<NUM_CELLS; i++) {
-                const container = document.querySelector(`#stat-cell-${i} .bar-container`);
-                if(container) {
-                    const markers = container.querySelectorAll('.bar-threshold');
-                    const percent = (params.threshold / 200) * 50;
-                    markers[0].style.left = `${50 - percent}%`;
-                    markers[1].style.left = `${50 + percent}%`;
-                }
+                const percent = (params.threshold / 200) * 50;
+                document.getElementById(`thresh-left-${i}`).style.left = `${50 - percent}%`;
+                document.getElementById(`thresh-right-${i}`).style.left = `${50 + percent}%`;
             }
         }
 
-        // Rendering Grafico Biologico
         function drawSystem() {
-            // Sfondo con effetto scia/fluido
-            ctx.fillStyle = 'rgba(3, 10, 8, 0.2)'; // Fluido scuro
+            ctx.fillStyle = 'rgba(3, 10, 8, 0.2)';
             ctx.fillRect(0, 0, width, height);
+            ctx.globalCompositeOperation = 'lighter';
 
-            ctx.globalCompositeOperation = 'lighter'; // Effetto luminescente
-
-            // Disegna Sinapsi (Connessioni)
             for(let i = 0; i < NUM_CELLS; i++) {
                 for(let j = 0; j < NUM_CELLS; j++) {
                     if (i === j) continue;
-                    
                     const weight = weightMatrix[i][j];
                     const strength = Math.abs(weight) * 3;
+                    if (strength < 0.01) continue;
                     
-                    if (strength < 0.1 && systemState !== 'mutating') continue;
-
                     ctx.beginPath();
                     ctx.moveTo(cells[i].x, cells[i].y);
-                    
-                    // Curvatura organica
                     const dist = Math.sqrt(Math.pow(cells[j].x - cells[i].x, 2) + Math.pow(cells[j].y - cells[i].y, 2));
-                    const flowOffset = Math.sin(time * 2 + i + j) * dist * 0.2;
-                    
-                    const cpX = (cells[i].x + cells[j].x) / 2 - flowOffset;
-                    const cpY = (cells[i].y + cells[j].y) / 2 + flowOffset;
-                    
+                    const cpX = (cells[i].x + cells[j].x) / 2 - Math.sin(time * 2 + i) * dist * 0.1;
+                    const cpY = (cells[i].y + cells[j].y) / 2 + Math.cos(time * 2 + j) * dist * 0.1;
                     ctx.quadraticCurveTo(cpX, cpY, cells[j].x, cells[j].y);
                     
-                    if (systemState === 'mutating') {
-                        // Lampo di ricalcolo (mutazione)
-                        ctx.strokeStyle = Math.random() > 0.5 ? 'rgba(255, 100, 100, 0.6)' : 'rgba(100, 255, 255, 0.6)';
-                        ctx.lineWidth = Math.random() * 4 + 1;
-                    } else {
-                        // Trasferimento di informazione/energia
-                        const energyFlow = Math.min(Math.abs(cells[i].value * weight) * 0.05, 1);
-                        ctx.strokeStyle = weight > 0 ? `rgba(100, 255, 150, ${strength * 0.5 + energyFlow})` : `rgba(100, 150, 255, ${strength * 0.5 + energyFlow})`;
-                        ctx.lineWidth = strength * 2 + energyFlow * 3;
-                    }
-                    
+                    const energyFlow = Math.min(Math.abs(cells[i].value * weight) * 0.05, 1);
+                    ctx.strokeStyle = weight > 0 ? `rgba(100, 255, 150, ${0.1 + strength + energyFlow})` : `rgba(100, 150, 255, ${0.1 + strength + energyFlow})`;
+                    ctx.lineWidth = 0.5 + strength * 2;
                     ctx.stroke();
                 }
             }
 
-            // Disegna Cellule
             for(let i = 0; i < NUM_CELLS; i++) {
                 const cell = cells[i];
                 const stressRatio = Math.min(Math.abs(cell.value) / params.threshold, 1.2);
+                const radius = 22 + (stressRatio * 15);
+                const r = Math.floor(50 + (stressRatio * 200)), g = Math.floor(200 - (stressRatio * 100)), b = Math.floor(150 - (stressRatio * 150));
                 
-                // Nucleo
-                const baseRadius = 20;
-                const pulse = Math.sin(time * 3 + cell.phase) * 3;
-                const radius = baseRadius + pulse + (stressRatio * 15);
-                
-                // Calcolo colore da sano (verde/blu) a stressato (rosso/giallo)
-                const r = Math.floor(50 + (stressRatio * 200));
-                const g = Math.floor(200 - (stressRatio * 100));
-                const b = Math.floor(150 - (stressRatio * 150));
-                
-                // Alone cellulare
-                const gradient = ctx.createRadialGradient(cell.x, cell.y, radius * 0.2, cell.x, cell.y, radius * 2);
+                const gradient = ctx.createRadialGradient(cell.x, cell.y, radius * 0.1, cell.x, cell.y, radius * 1.5);
                 gradient.addColorStop(0, `rgba(255, 255, 255, 0.8)`);
-                gradient.addColorStop(0.2, `rgba(${r}, ${g}, ${b}, 0.8)`);
+                gradient.addColorStop(0.2, `rgba(${r}, ${g}, ${b}, 0.6)`);
                 gradient.addColorStop(1, `rgba(${r}, ${g}, ${b}, 0)`);
-
+                
                 ctx.beginPath();
-                ctx.arc(cell.x, cell.y, radius * 2, 0, Math.PI * 2);
+                ctx.arc(cell.x, cell.y, radius * 1.5, 0, Math.PI * 2);
                 ctx.fillStyle = gradient;
                 ctx.fill();
-
-                // Membrana
+                
                 ctx.beginPath();
                 ctx.arc(cell.x, cell.y, radius, 0, Math.PI * 2);
-                ctx.strokeStyle = `rgba(255, 255, 255, ${0.3 + stressRatio * 0.5})`;
+                ctx.strokeStyle = `rgba(255, 255, 255, ${0.4 + stressRatio * 0.4})`;
                 ctx.lineWidth = 2;
                 ctx.stroke();
-                
-                // Disegna ID per chiarezza
-                ctx.fillStyle = 'rgba(255,255,255,0.7)';
-                ctx.font = '12px Courier New';
-                ctx.textAlign = 'center';
-                ctx.textBaseline = 'middle';
-                ctx.fillText(i+1, cell.x, cell.y);
             }
-
-            // Disegna input ambientale del mouse
-            if (isDown) {
-                ctx.beginPath();
-                ctx.arc(mouseX, mouseY, 150, 0, Math.PI * 2);
-                const envGradient = ctx.createRadialGradient(mouseX, mouseY, 0, mouseX, mouseY, 150);
-                envGradient.addColorStop(0, 'rgba(255, 50, 100, 0.15)');
-                envGradient.addColorStop(1, 'rgba(255, 50, 100, 0)');
-                ctx.fillStyle = envGradient;
-                ctx.fill();
-            }
-
             ctx.globalCompositeOperation = 'source-over';
         }
 
-        function loop() {
-            updateSystem();
-            updateTimerUI();
-            drawSystem();
-            requestAnimationFrame(loop);
-        }
-
-        // Start
+        function loop() { updateSystem(); updateTimerUI(); drawSystem(); requestAnimationFrame(loop); }
+        window.addEventListener('resize', positionCells);
         initCells();
         loop();
-
     </script>
 </body>
 </html>
