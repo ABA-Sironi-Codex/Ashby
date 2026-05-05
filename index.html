@@ -214,6 +214,7 @@
         let isTimerRunning = false;
         let lastRecoveryDuration = 0;
 
+        const dt = 0.16; // Time step per l'integrazione differenziale
         let chaosRadius = 0;
         const MAX_CHAOS_RADIUS = 350;
 
@@ -234,7 +235,7 @@
                 cellsContainer.insertAdjacentHTML('beforeend', statHTML);
             }
             positionCells();
-            mutateGenetics();
+            mutateGenetics(); // Inizializzazione globale
         }
 
         function positionCells() {
@@ -264,6 +265,7 @@
             updateStatusUI();
         }
 
+        // Simula il reset globale (hard boot)
         function mutateGenetics() {
             weightMatrix = [];
             for(let i = 0; i < NUM_CELLS; i++) {
@@ -271,9 +273,21 @@
                 for(let j = 0; j < NUM_CELLS; j++) {
                     weightMatrix[i][j] = (Math.random() - 0.5) * 0.35;
                 }
-                weightMatrix[i][i] = -0.05 - params.damping;
+                weightMatrix[i][i] = -0.1; // Stabilità base innata disaccoppiata dal damping
             }
             mutationTimer = 30; 
+            changeState('mutating');
+        }
+
+        // Simula lo spostamento del commutatore di un singolo selettore (Uniselector)
+        function mutateUnit(index) {
+            for(let j = 0; j < NUM_CELLS; j++) {
+                if (index !== j) {
+                    weightMatrix[index][j] = (Math.random() - 0.5) * 0.35;
+                }
+            }
+            weightMatrix[index][index] = -0.1;
+            mutationTimer = 10; // Cooldown più breve per mutazioni specifiche
             changeState('mutating');
         }
 
@@ -286,7 +300,7 @@
         dampingInput.addEventListener('input', (e) => {
             params.damping = parseFloat(e.target.value);
             document.getElementById('val-damping').textContent = params.damping.toFixed(2);
-            for(let i=0; i<NUM_CELLS; i++) weightMatrix[i][i] = -Math.abs(weightMatrix[i][i]) - params.damping;
+            // Il damping agisce ora direttamente in updateSystem(), non serve ricalcolare la matrice
         });
 
         sensitivityInput.addEventListener('input', (e) => {
@@ -295,9 +309,9 @@
         });
 
         document.getElementById('btn-mutate').addEventListener('click', () => {
+            // Applica una forza massiva simulando uno shock di sistema
             cells.forEach(c => {
-                c.value += (Math.random() > 0.5 ? 1 : -1) * 90;
-                c.velocity += (Math.random() - 0.5) * 15;
+                c.velocity += (Math.random() > 0.5 ? 1 : -1) * 200;
             });
             mutateGenetics();
         });
@@ -305,13 +319,13 @@
         document.getElementById('btn-homeostasis').addEventListener('click', () => {
             for(let i = 0; i < NUM_CELLS; i++) {
                 for(let j = 0; j < NUM_CELLS; j++) {
-                    weightMatrix[i][j] *= 0.2;
+                    weightMatrix[i][j] *= 0.1;
                 }
-                weightMatrix[i][i] = -0.8 - params.damping;
+                weightMatrix[i][i] = -0.5; // Forte auto-regolazione indotta
             }
             cells.forEach(c => {
                 c.value *= 0.05;
-                c.velocity = 0;
+                c.velocity *= 0.05;
             });
             mutationTimer = 0;
             changeState('adapting');
@@ -328,9 +342,11 @@
         window.addEventListener('mouseup', () => { isDown = false; });
 
         function updateSystem() {
-            time += 0.05;
-            let maxStress = 0, maxVelocity = 0, limitReached = false;
+            time += dt;
+            let maxStress = 0, maxVelocity = 0;
+            let cellsToMutate = [];
 
+            // 1. Accumulo raggio del caos
             if (isDown) {
                 chaosRadius = Math.min(chaosRadius + 3, MAX_CHAOS_RADIUS);
             } else {
@@ -338,31 +354,47 @@
                 if (chaosRadius === 0) mouseX = -1000;
             }
 
+            // 2. Calcolo forza esterna continua (Step-Function)
+            let externalForces = new Array(NUM_CELLS).fill(0);
             if (chaosRadius > 0 && mouseX !== -1000) {
                 cells.forEach(cell => {
                     const dist = Math.sqrt(Math.pow(mouseX - cell.x, 2) + Math.pow(mouseY - cell.y, 2));
                     if (dist < chaosRadius) {
                         const intensity = (chaosRadius - dist) / chaosRadius;
                         const chaosFactor = (chaosRadius / 100); 
-                        cell.value += (Math.random() > 0.5 ? 1 : -1) * intensity * params.sensitivity * chaosFactor;
+                        // Forza direzionale polarizzata in base all'ID per indurre asimmetria
+                        const polarity = (cell.id % 2 === 0) ? 1 : -1;
+                        externalForces[cell.id] = polarity * intensity * params.sensitivity * chaosFactor * 25; 
                     }
                 });
             }
 
+            // 3. Integrazione Numerica Semi-Implicita di Eulero
             let derivatives = new Array(NUM_CELLS).fill(0);
             for(let i = 0; i < NUM_CELLS; i++) {
-                for(let j = 0; j < NUM_CELLS; j++) derivatives[i] += weightMatrix[i][j] * cells[j].value;
+                for(let j = 0; j < NUM_CELLS; j++) {
+                    derivatives[i] += weightMatrix[i][j] * cells[j].value;
+                }
             }
 
             for(let i = 0; i < NUM_CELLS; i++) {
                 let cell = cells[i];
-                cell.velocity += derivatives[i];
-                cell.velocity *= 0.88; 
-                cell.value += cell.velocity;
                 
+                // Accelerazione totale (F=ma) = Somma perturbazioni rete + Forze Esterne
+                let acceleration = derivatives[i] + externalForces[i];
+                
+                // Frizione basata esclusivamente sul parametro utente (scalata per efficacia)
+                let friction = (params.damping * 5.0) * cell.velocity; 
+                
+                // Aggiornamento differenziale cinematico
+                cell.velocity += (acceleration - friction) * dt;
+                cell.value += cell.velocity * dt;
+                
+                // Safety Clamp 
                 if (cell.value > 500) cell.value = 500;
                 if (cell.value < -500) cell.value = -500;
                 
+                // Deformazione visiva basata sullo stress
                 const stressFloat = Math.abs(cell.value) * 0.1;
                 cell.x = cell.baseX + Math.sin(time + cell.phase) * 10 + (Math.random() - 0.5) * stressFloat;
                 cell.y = cell.baseY + Math.cos(time + cell.phase) * 10 + (Math.random() - 0.5) * stressFloat;
@@ -371,17 +403,22 @@
                 if (currentStress > maxStress) maxStress = currentStress;
                 if (Math.abs(cell.velocity) > maxVelocity) maxVelocity = Math.abs(cell.velocity);
                 
-                if (currentStress >= params.threshold) limitReached = true;
+                // Segnala la singola unità se supera la soglia critica
+                if (currentStress >= params.threshold) {
+                    cellsToMutate.push(i);
+                }
                 
                 updateCellUI(i, cell.value);
             }
 
+            // 4. Logica di Omeostasi e Controllo Stato
             if (mutationTimer > 0) {
                 mutationTimer--;
                 stableFrames = 0;
             } else {
-                if (limitReached) {
-                    mutateGenetics();
+                if (cellsToMutate.length > 0) {
+                    // Mutano solo i selettori collassati, mantenendo intatto il resto del network
+                    cellsToMutate.forEach(idx => mutateUnit(idx));
                     stableFrames = 0;
                 } else {
                     let isQuiet = (maxStress <= params.threshold * 0.25 && maxVelocity <= params.threshold * 0.05);
@@ -432,7 +469,6 @@
             ctx.fillRect(0, 0, width, height);
             ctx.globalCompositeOperation = 'lighter';
 
-            // Draw growing chaos zone
             if (chaosRadius > 0 && mouseX !== -1000) {
                 const chaosIntensity = chaosRadius / MAX_CHAOS_RADIUS;
                 const r = 255;
