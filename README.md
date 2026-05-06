@@ -16,6 +16,10 @@ In this simulation, four interconnected "cells" attempt to maintain internal sta
 
 The original Homeostat was an electromechanical device built by British psychiatrist and cyberneticist W. Ross Ashby. It was designed to demonstrate how a machine could achieve stability through adaptation without having a pre-programmed solution.
 
+<img width="960" height="779" alt="960px-W _Ross_Ashby&#39;s_1948_Homeostat" src="https://github.com/user-attachments/assets/dfe8d862-8d12-4eb8-8528-45b4e02695f0" />
+
+*The original homeostat, built in 1948 by W. Ross Ashby*.
+
 **Core Principles:**
 
 1. **Essential Variables:** Every organism has variables (like body temperature) that must stay within specific limits to ensure survival.
