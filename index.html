@@ -278,6 +278,11 @@
             ov.classList.toggle('show');
         };
         ham.addEventListener('click', toggleMenu);
+        // Firefox on mobile requires explicit touchend binding to the overlay for dismissing the drawer
+        ov.addEventListener('touchend', (e) => {
+            e.preventDefault();
+            toggleMenu();
+        }, {passive: false});
         ov.addEventListener('click', toggleMenu);
 
         // ── CORE LOGIC ──
@@ -353,6 +358,7 @@
         }
 
         // ── LISTENERS ──
+        // Changed to purely 'input' to correctly map on both browsers
         thresholdInput.addEventListener('input', (e) => {
             params.threshold = parseInt(e.target.value);
             document.getElementById('val-threshold').textContent = params.threshold;
@@ -373,8 +379,23 @@
             cells.forEach(c => c.velocity += (Math.random() > 0.5 ? 1 : -1) * 200);
             mutateGenetics();
         });
+        document.getElementById('btn-mutate').addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            cells.forEach(c => c.velocity += (Math.random() > 0.5 ? 1 : -1) * 200);
+            mutateGenetics();
+        });
 
         document.getElementById('btn-homeostasis').addEventListener('click', () => {
+            for(let i = 0; i < NUM_CELLS; i++) {
+                for(let j = 0; j < NUM_CELLS; j++) { weightMatrix[i][j] *= 0.1; }
+                weightMatrix[i][i] = -0.5; // Forte auto-regolazione indotta
+            }
+            cells.forEach(c => { c.value *= 0.05; c.velocity *= 0.05; });
+            mutationTimer = 0;
+            changeState('adapting');
+        });
+        document.getElementById('btn-homeostasis').addEventListener('touchstart', (e) => {
+            e.preventDefault();
             for(let i = 0; i < NUM_CELLS; i++) {
                 for(let j = 0; j < NUM_CELLS; j++) { weightMatrix[i][j] *= 0.1; }
                 weightMatrix[i][i] = -0.5; // Forte auto-regolazione indotta
@@ -401,10 +422,11 @@
         window.addEventListener('mouseup', () => { isDown = false; });
 
         // Touch Events
-        // Manteniamo preventDefault solo dove strettamente necessario (start/move sul canvas) per non ostacolare il click system-wide
         canvas.addEventListener('touchstart', (e) => { e.preventDefault(); isDown = true; updateMouse(e); }, {passive: false});
         canvas.addEventListener('touchmove', (e) => { e.preventDefault(); if(isDown) updateMouse(e); }, {passive: false});
-        window.addEventListener('touchend', () => { isDown = false; });
+        // Modifica: rimozione di preventDefault in globale su document/window touchend, aggiunta ad-hoc
+        canvas.addEventListener('touchend', (e) => { e.preventDefault(); isDown = false; }, {passive: false});
+
 
         // ── UPDATE & DRAW ──
         function updateSystem() {
