@@ -2,7 +2,7 @@
 <html lang="en-US">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
     <title>Generative Homeostat - Ashby</title>
     <style>
         :root {
@@ -12,6 +12,7 @@
             --text-main: #f0f5f2;
             --text-alert: #ff7777;
             --font-main: 'Courier New', Courier, monospace;
+            --amber: #44cc88;
         }
 
         body, html {
@@ -27,24 +28,56 @@
 
         canvas {
             display: block;
+            position: fixed;
+            inset: 0;
             width: 100%;
             height: 100%;
+            touch-action: none; /* No scroll while interacting with canvas */
         }
 
+        /* ── MOBILE MENU & OVERLAY ── */
+        #ham {
+            position: fixed; top: 14px; left: 14px; z-index: 200; width: 44px; height: 44px;
+            border-radius: 5px; background: rgba(5, 15, 12, 0.9); border: 1px solid var(--border-color);
+            cursor: pointer; display: flex; flex-direction: column; align-items: center;
+            justify-content: center; gap: 5px; transition: background 0.2s;
+            -webkit-tap-highlight-color: transparent;
+        }
+        #ham:hover { background: rgba(50, 150, 100, 0.2); }
+        #ham .bar { width: 18px; height: 1.5px; background: var(--amber); border-radius: 1px; transition: all 0.28s ease; }
+        #ham.open .bar:nth-child(1) { transform: translateY(6.5px) rotate(45deg); }
+        #ham.open .bar:nth-child(2) { opacity: 0; transform: scaleX(0); }
+        #ham.open .bar:nth-child(3) { transform: translateY(-6.5px) rotate(-45deg); }
+
+        #ov {
+            position: fixed; inset: 0; z-index: 150; background: rgba(0,0,0,0.55);
+            backdrop-filter: blur(3px); opacity: 0; pointer-events: none; transition: opacity 0.28s;
+        }
+        #ov.show { opacity: 1; pointer-events: all; }
+
+        /* ── PANELS ── */
         .panel {
             position: absolute;
             background: var(--panel-bg);
             border: 1px solid var(--border-color);
-            border-radius: 8px;
-            padding: 15px;
             backdrop-filter: blur(5px);
             z-index: 10;
-            max-height: 95vh;
-            overflow-y: auto;
         }
 
-        #controls { top: 20px; left: 20px; width: 280px; }
-        #dashboard { top: 20px; right: 20px; width: 250px; }
+        /* Controls Panel converted to Drawer */
+        #controls {
+            position: fixed; top: 0; left: 0; height: 100%; width: min(320px, 90vw); z-index: 160;
+            border-radius: 0; border-right: 1px solid var(--border-color); border-top: none; border-bottom: none; border-left: none;
+            transform: translateX(-100%); transition: transform 0.32s cubic-bezier(0.4,0,0.2,1);
+            display: flex; flex-direction: column; overflow-y: auto;
+            padding: 70px 18px 36px 18px; /* Hamburger menu spaace */
+            scrollbar-width: thin; scrollbar-color: var(--border-color) transparent;
+        }
+        #controls.open { transform: translateX(0); }
+        #controls::-webkit-scrollbar { width: 4px; }
+        #controls::-webkit-scrollbar-thumb { background: var(--border-color); border-radius: 2px; }
+
+        #dashboard { top: 20px; right: 20px; width: 250px; border-radius: 8px; padding: 15px; max-height: 95vh; overflow-y: auto; }
 
         h1, h2 {
             margin: 0 0 15px 0;
@@ -68,7 +101,7 @@
             display: block;
         }
 
-        input[type="range"] { width: 100%; accent-color: #44cc88; }
+        input[type="range"] { width: 100%; accent-color: var(--amber); cursor: pointer; }
 
         button {
             width: 100%;
@@ -82,9 +115,10 @@
             letter-spacing: 1px;
             transition: all 0.3s;
             border-radius: 4px;
+            -webkit-tap-highlight-color: transparent;
         }
 
-        button:hover { background: rgba(50, 150, 100, 0.5); }
+        button:hover, button:active { background: rgba(50, 150, 100, 0.5); }
 
         .status-badge {
             display: inline-block;
@@ -140,12 +174,30 @@
             border-top: 1px solid var(--border-color);
             font-size: 0.8rem; color: #d0e0d8; line-height: 1.4;
         }
+
+        /* Mobile Responsive Dashboard */
+        @media (max-width: 768px) {
+            #dashboard {
+                top: 14px; right: 14px; width: 170px; padding: 10px; font-size: 0.8rem;
+            }
+            #dashboard h2 { font-size: 0.9rem; margin-bottom: 10px; }
+            .status-badge { font-size: 0.75rem; padding: 4px 6px; margin-bottom: 10px; }
+            #timer-display { font-size: 0.75rem; margin-bottom: 10px; }
+            .cell-stat { margin-bottom: 6px; }
+        }
     </style>
 </head>
 <body>
 
+    <canvas id="canvas"></canvas>
+
+    <button id="ham" aria-label="Menu">
+        <span class="bar"></span><span class="bar"></span><span class="bar"></span>
+    </button>
+    <div id="ov"></div>
+
     <div id="controls" class="panel">
-        <h1>Ashby</h1>
+        <h1 style="margin-top: -10px;">Ashby</h1>
         
         <div class="control-group">
             <label>Critical Threshold <span id="val-threshold">100</span></label>
@@ -161,7 +213,7 @@
 
         <div class="control-group">
             <label>Env. Sensitivity <span id="val-sensitivity">15</span></label>
-            <span class="help-text">Intensity of the reaction to external disturbances (mouse).</span>
+            <span class="help-text">Intensity of the reaction to external disturbances (mouse/touch).</span>
             <input type="range" id="param-sensitivity" min="1" max="50" value="15">
         </div>
 
@@ -169,12 +221,12 @@
         <button id="btn-homeostasis" style="margin-top: 10px; background: rgba(100, 200, 255, 0.15); border-color: rgba(100, 200, 255, 0.3); color: #aaddff;">Force Homeostasis</button>
 
         <div id="instructions">
-            <b>Interaction:</b> Click and hold to generate a growing zone of chaos. Drag it against the cells to inject environmental stress.
+            <b>Interaction:</b> Click/tap and hold to generate a growing zone of chaos. Drag it against the cells to inject environmental stress.
         </div>
 
         <div id="about">
             <b>Ashby's Homeostat:</b><br>
-            Inspired by W. Ross Ashby's 1948 work, this system simulates <i>ultrastability</i>. Four interconnected cells react to the environment. If stress exceeds the threshold, they reorganize their linkages until equilibrium is found.
+            Inspired by W. Ross Ashby's 1948 work, this system simulates <i>ultrastability</i>. Four interconnected cells react to the environment. If stress exceeds the threshold, they reorganize their linkages until equilibrium is found. More infos and code: <a href="https://github.com/davideriboli/Ashby">https://github.com/davideriboli/Ashby</a>.
         </div>
     </div>
 
@@ -184,8 +236,6 @@
         <div id="timer-display">System at rest</div>
         <div id="cells-container"></div>
     </div>
-
-    <canvas id="canvas"></canvas>
 
     <script>
         const canvas = document.getElementById('canvas');
@@ -218,6 +268,19 @@
         let chaosRadius = 0;
         const MAX_CHAOS_RADIUS = 350;
 
+        // ── DRAWER LOGIC ──
+        const ham = document.getElementById('ham');
+        const controls = document.getElementById('controls');
+        const ov = document.getElementById('ov');
+        const toggleMenu = () => {
+            ham.classList.toggle('open');
+            controls.classList.toggle('open');
+            ov.classList.toggle('show');
+        };
+        ham.addEventListener('click', toggleMenu);
+        ov.addEventListener('click', toggleMenu);
+
+        // ── CORE LOGIC ──
         function initCells() {
             cellsContainer.innerHTML = '';
             cells = [];
@@ -265,7 +328,6 @@
             updateStatusUI();
         }
 
-        // Simula il reset globale (hard boot)
         function mutateGenetics() {
             weightMatrix = [];
             for(let i = 0; i < NUM_CELLS; i++) {
@@ -273,13 +335,12 @@
                 for(let j = 0; j < NUM_CELLS; j++) {
                     weightMatrix[i][j] = (Math.random() - 0.5) * 0.35;
                 }
-                weightMatrix[i][i] = -0.1; // Stabilità base innata disaccoppiata dal damping
+                weightMatrix[i][i] = -0.1; // Stabilità base innata
             }
             mutationTimer = 30; 
             changeState('mutating');
         }
 
-        // Simula lo spostamento del commutatore di un singolo selettore (Uniselector)
         function mutateUnit(index) {
             for(let j = 0; j < NUM_CELLS; j++) {
                 if (index !== j) {
@@ -287,10 +348,11 @@
                 }
             }
             weightMatrix[index][index] = -0.1;
-            mutationTimer = 10; // Cooldown più breve per mutazioni specifiche
+            mutationTimer = 10;
             changeState('mutating');
         }
 
+        // ── LISTENERS ──
         thresholdInput.addEventListener('input', (e) => {
             params.threshold = parseInt(e.target.value);
             document.getElementById('val-threshold').textContent = params.threshold;
@@ -300,7 +362,6 @@
         dampingInput.addEventListener('input', (e) => {
             params.damping = parseFloat(e.target.value);
             document.getElementById('val-damping').textContent = params.damping.toFixed(2);
-            // Il damping agisce ora direttamente in updateSystem(), non serve ricalcolare la matrice
         });
 
         sensitivityInput.addEventListener('input', (e) => {
@@ -309,44 +370,48 @@
         });
 
         document.getElementById('btn-mutate').addEventListener('click', () => {
-            // Applica una forza massiva simulando uno shock di sistema
-            cells.forEach(c => {
-                c.velocity += (Math.random() > 0.5 ? 1 : -1) * 200;
-            });
+            cells.forEach(c => c.velocity += (Math.random() > 0.5 ? 1 : -1) * 200);
             mutateGenetics();
         });
 
         document.getElementById('btn-homeostasis').addEventListener('click', () => {
             for(let i = 0; i < NUM_CELLS; i++) {
-                for(let j = 0; j < NUM_CELLS; j++) {
-                    weightMatrix[i][j] *= 0.1;
-                }
+                for(let j = 0; j < NUM_CELLS; j++) { weightMatrix[i][j] *= 0.1; }
                 weightMatrix[i][i] = -0.5; // Forte auto-regolazione indotta
             }
-            cells.forEach(c => {
-                c.value *= 0.05;
-                c.velocity *= 0.05;
-            });
+            cells.forEach(c => { c.value *= 0.05; c.velocity *= 0.05; });
             mutationTimer = 0;
             changeState('adapting');
         });
 
+        // ── INPUT MOUSE & TOUCH (Ottimizzati) ──
         let mouseX = -1000, mouseY = -1000, isDown = false;
+        
         const updateMouse = (e) => {
             const rect = canvas.getBoundingClientRect();
-            mouseX = (e.clientX || (e.touches && e.touches[0].clientX)) - rect.left;
-            mouseY = (e.clientY || (e.touches && e.touches[0].clientY)) - rect.top;
+            const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+            const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+            mouseX = clientX - rect.left;
+            mouseY = clientY - rect.top;
         };
+
+        // Mouse Events
         canvas.addEventListener('mousedown', (e) => { isDown = true; updateMouse(e); });
         canvas.addEventListener('mousemove', (e) => { if(isDown) updateMouse(e); });
         window.addEventListener('mouseup', () => { isDown = false; });
 
+        // Touch Events
+        canvas.addEventListener('touchstart', (e) => { e.preventDefault(); isDown = true; updateMouse(e); }, {passive: false});
+        canvas.addEventListener('touchmove', (e) => { e.preventDefault(); if(isDown) updateMouse(e); }, {passive: false});
+        window.addEventListener('touchend', (e) => { e.preventDefault(); isDown = false; }, {passive: false});
+
+
+        // ── UPDATE & DRAW ──
         function updateSystem() {
             time += dt;
             let maxStress = 0, maxVelocity = 0;
             let cellsToMutate = [];
 
-            // 1. Accumulo raggio del caos
             if (isDown) {
                 chaosRadius = Math.min(chaosRadius + 3, MAX_CHAOS_RADIUS);
             } else {
@@ -354,7 +419,6 @@
                 if (chaosRadius === 0) mouseX = -1000;
             }
 
-            // 2. Calcolo forza esterna continua (Step-Function)
             let externalForces = new Array(NUM_CELLS).fill(0);
             if (chaosRadius > 0 && mouseX !== -1000) {
                 cells.forEach(cell => {
@@ -362,14 +426,12 @@
                     if (dist < chaosRadius) {
                         const intensity = (chaosRadius - dist) / chaosRadius;
                         const chaosFactor = (chaosRadius / 100); 
-                        // Forza direzionale polarizzata in base all'ID per indurre asimmetria
                         const polarity = (cell.id % 2 === 0) ? 1 : -1;
                         externalForces[cell.id] = polarity * intensity * params.sensitivity * chaosFactor * 25; 
                     }
                 });
             }
 
-            // 3. Integrazione Numerica Semi-Implicita di Eulero
             let derivatives = new Array(NUM_CELLS).fill(0);
             for(let i = 0; i < NUM_CELLS; i++) {
                 for(let j = 0; j < NUM_CELLS; j++) {
@@ -379,22 +441,15 @@
 
             for(let i = 0; i < NUM_CELLS; i++) {
                 let cell = cells[i];
-                
-                // Accelerazione totale (F=ma) = Somma perturbazioni rete + Forze Esterne
                 let acceleration = derivatives[i] + externalForces[i];
-                
-                // Frizione basata esclusivamente sul parametro utente (scalata per efficacia)
                 let friction = (params.damping * 5.0) * cell.velocity; 
                 
-                // Aggiornamento differenziale cinematico
                 cell.velocity += (acceleration - friction) * dt;
                 cell.value += cell.velocity * dt;
                 
-                // Safety Clamp 
                 if (cell.value > 500) cell.value = 500;
                 if (cell.value < -500) cell.value = -500;
                 
-                // Deformazione visiva basata sullo stress
                 const stressFloat = Math.abs(cell.value) * 0.1;
                 cell.x = cell.baseX + Math.sin(time + cell.phase) * 10 + (Math.random() - 0.5) * stressFloat;
                 cell.y = cell.baseY + Math.cos(time + cell.phase) * 10 + (Math.random() - 0.5) * stressFloat;
@@ -403,7 +458,6 @@
                 if (currentStress > maxStress) maxStress = currentStress;
                 if (Math.abs(cell.velocity) > maxVelocity) maxVelocity = Math.abs(cell.velocity);
                 
-                // Segnala la singola unità se supera la soglia critica
                 if (currentStress >= params.threshold) {
                     cellsToMutate.push(i);
                 }
@@ -411,13 +465,11 @@
                 updateCellUI(i, cell.value);
             }
 
-            // 4. Logica di Omeostasi e Controllo Stato
             if (mutationTimer > 0) {
                 mutationTimer--;
                 stableFrames = 0;
             } else {
                 if (cellsToMutate.length > 0) {
-                    // Mutano solo i selettori collassati, mantenendo intatto il resto del network
                     cellsToMutate.forEach(idx => mutateUnit(idx));
                     stableFrames = 0;
                 } else {
